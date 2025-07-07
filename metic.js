@@ -135,10 +135,12 @@ module.exports = async (Metic, m) => {
             if (!global.admin.includes(sender)) return Meticreply(global.mess.admin);
 
             const [nomor, ...namaArr] = args;
-            const nama = namaArr.join(" ");
+            const nama = namaArr[0];
+            const ketertarikan = namaArr[1];
+            const pengalaman = namaArr.slice(2).join(" ");
 
-            if (!nomor || !nama) {
-                return Meticreply("Penggunaan: !addkontak 6281234567890 Nama Lengkap");
+            if (!nomor || !nama || !ketertarikan || !pengalaman) {
+                return Meticreply("Penggunaan: !addkontak 6281234567890 Nama Ketertarikan Pengalaman");
             }
 
             if (!isValidNumber(nomor)) {
@@ -153,7 +155,13 @@ module.exports = async (Metic, m) => {
                 return Meticreply("⚠ Kontak sudah ada dalam daftar.");
             }
 
-            daftarKontak.push({ nomor: nomorWA, nama });
+            daftarKontak.push({ 
+                nomor: nomorWA, 
+                nama, 
+                Ketertarikan: ketertarikan,
+                pengalaman: pengalaman
+            });
+
             fs.writeFileSync('./kontak.json', JSON.stringify(daftarKontak, null, 2));
             Meticreply(`✅ Kontak *${nama}* berhasil ditambahkan.`);
             break;
@@ -204,7 +212,10 @@ module.exports = async (Metic, m) => {
 
             let list = '📋 *Daftar Kontak:*\n\n';
             daftarKontak.forEach((data, i) => {
-                list += `${i + 1}. ${data.nama} (${data.nomor})\n`;
+                list += `${i + 1}. ${data.nama}\n`;
+                list += `   Nomor: ${data.nomor}\n`;
+                list += `   Ketertarikan: ${data.Ketertarikan || "-"}\n`;
+                list += `   Pengalaman: ${data.pengalaman || "-"}\n\n`;
             });
 
             Meticreply(list);
@@ -223,9 +234,13 @@ module.exports = async (Metic, m) => {
                 break;
             }
 
+            // Kirim ke semua kontak
             for (const data of daftarKontak) {
-                const { nomor, nama } = data;
-                let pesanPersonal = q.replace(/{Nama}/g, nama);
+                const { nomor, nama, Ketertarikan, pengalaman } = data;
+
+                let pesanPersonal = q.replace(/{Nama}/g, nama)
+                                    .replace(/{Ketertarikan}/g, Ketertarikan || '-')
+                                    .replace(/{pengalaman}/g, pengalaman || '-');
 
                 try {
                     await Metic.sendMessage(nomor, { text: pesanPersonal });
